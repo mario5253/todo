@@ -24,8 +24,9 @@ function handleServerError(res: Response, err: unknown, message: string = 'サ�
 // ToDoの全データを返すルート
 router.get('/', async (req: Request, res: Response) => {
  try {
-   const sql = 'SELECT id, title, completed, created_at AS createdAt FROM todos ORDER BY createdAt DESC';
-   const rows = await query<Todo>(sql);
+   const sql = 'SELECT id, title, completed, created_at AS createdAt FROM todos WHERE user_id = ? ORDER BY createdAt DESC';
+   const params = [(req as any).user.id];
+   const rows = await query<Todo>(sql,params);
 
    res.status(200).json(rows);
  } catch (err) {
@@ -48,8 +49,8 @@ router.post('/', async (req: Request, res: Response) => {
  }
 
  try {
-   const sql = 'INSERT INTO todos (title, completed, created_at) VALUES (?, ?, ?)';
-   const params = [title, false, new Date()];
+   const sql = 'INSERT INTO todos (title, completed, created_at, user_id) VALUES (?, ?, ?, ?)';
+   const params = [title, false, new Date(), (req as any).user.id];
 
    await exec(sql, params);
 
@@ -74,8 +75,8 @@ router.put('/:id', async (req: Request, res: Response) => {
  }
 
  try {
-   const sql = 'UPDATE todos SET title = ?, completed = ? WHERE id = ?';
-   const params = [title, completed, req.params.id];
+   const sql = 'UPDATE todos SET title = ?, completed = ? WHERE id = ? AND user_id = ?';
+   const params = [title, completed, req.params.id, (req as any).user.id];
    const result = await exec(sql, params);
 
    if (result.affectedRows === 0) {
@@ -92,8 +93,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 // ToDoを削除するルート
 router.delete('/:id', async (req: Request, res: Response) => {
  try {
-   const sql = 'DELETE FROM todos WHERE id = ?';
-   const params = [req.params.id];
+   const sql = 'DELETE FROM todos WHERE id = ? AND user_id = ?';
+   const params = [req.params.id, (req as any).user.id];
    const result = await exec(sql, params);
 
    if (result.affectedRows === 0) {
